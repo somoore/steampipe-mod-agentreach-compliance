@@ -1,0 +1,56 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.spc
+*.spc.local
+.claude/settings.local.json
+
+# Powerpipe / Steampipe local state
+.powerpipe/
+.steampipe/
+*.pps
+*.ppvars
+*.auto.ppvars
+powerpipe.ppvars
+
+# Node (dashboard tooling)
+node_modules/
+
+# Exports and scratch
+*.csv
+*.snap
+*.json
+!test/snapshots/*.json
+!**/package.json
+dist/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.fuse_hidden*
+*~
+.nfs*
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-*
+.history/

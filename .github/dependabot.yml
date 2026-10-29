@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    # Group action bumps into one PR; security bumps still open promptly.
+    groups:
+      github-actions:
+        patterns: ["*"]

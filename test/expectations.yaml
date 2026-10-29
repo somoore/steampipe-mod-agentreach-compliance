@@ -1,0 +1,529 @@
+# Regression checks for controls outside the core profile, and for core
+# controls under variable overrides. Run by ci/fixtures_check.py against the
+# agentreach_fixtures connection. Unlike spec/controls.yaml these records make no
+# AISVS claim; they pin behaviour that an audit item fixed.
+checks:
+  - agentreach: RC-03
+    control: local_services_restricted
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-services: [info]
+      fx-strict-services: [ok]
+  - agentreach: RC-04
+    control: docker_socket_unreachable
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-services: [info]
+      fx-strict-services: [ok]
+  - agentreach: RC-06
+    control: local_services_as_exits
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-services: [info]
+      fx-strict-services: [ok]
+  # Audit M7: the allowed list decides before auto is reported as info.
+  - agentreach: AG-02
+    control: permission_mode_allowed
+    vars:
+      allowed_permission_modes: ["default"]
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [alarm]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [ok]
+      fx-services: [ok]
+      fx-strict-services: [ok]
+      fx-project: [alarm]
+      fx-keys: [ok]
+      fx-incomplete: [skip]
+      fx-noprobe: [skip]
+      fx-unknown: [skip]
+      fx-codex: [ok]
+      fx-flags: [alarm]
+      fx-managed: [ok]
+      fx-agents: [ok]
+
+  # Audit section M (2026-10-28). Each record names the item it pins.
+  # M1: a project-only key that weakens the protection alarms when managed and user settings say nothing.
+  - agentreach: HD-42
+    control: project_mcp_not_auto_enabled
+    fixtures:
+      fx-auto: [ok]
+      fx-bypassable: [ok]
+      fx-hardened: [ok]
+      fx-incomplete: [ok]
+      fx-keys: [alarm]
+      fx-noprobe: [ok]
+      fx-open: [ok]
+      fx-attested: [ok]
+      fx-project: [ok]
+      fx-prompted: [ok]
+      fx-review: [ok]
+      fx-services: [ok]
+      fx-strict: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [ok]
+      fx-codex: [ok]
+      fx-flags: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+  # M15: skipDangerousModePermissionPrompt is read from user, local and managed only; fx-keys sets it in a project file, which is ignored.
+  - agentreach: HD-15
+    control: dangerous_mode_prompt_kept
+    fixtures:
+      fx-auto: [ok]
+      fx-bypassable: [ok]
+      fx-hardened: [ok]
+      fx-incomplete: [ok]
+      fx-keys: [ok]
+      fx-noprobe: [ok]
+      fx-open: [ok]
+      fx-attested: [ok]
+      fx-project: [ok]
+      fx-prompted: [ok]
+      fx-review: [ok]
+      fx-services: [ok]
+      fx-strict: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [ok]
+      fx-codex: [ok]
+      fx-flags: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+  # M4: channelsEnabled false is the same as unset; under a local deployment with no managed settings agentreach cannot see the plan.
+  - agentreach: HD-12
+    control: channels_disabled
+    fixtures:
+      fx-auto: [info]
+      fx-bypassable: [info]
+      fx-hardened: [info]
+      fx-incomplete: [info]
+      fx-keys: [info]
+      fx-noprobe: [info]
+      fx-open: [info]
+      fx-attested: [info]
+      fx-project: [info]
+      fx-prompted: [info]
+      fx-review: [info]
+      fx-services: [info]
+      fx-strict: [info]
+      fx-strict-services: [info]
+      fx-unknown: [info]
+      fx-codex: [info]
+      fx-flags: [info]
+      fx-managed: [ok]
+      fx-agents: [info]
+  # M4: Team and Enterprise plans block channels until managed settings set channelsEnabled true.
+  - agentreach: HD-12
+    control: channels_disabled
+    vars:
+      deployment: "teams"
+    fixtures:
+      fx-auto: [ok]
+      fx-bypassable: [ok]
+      fx-hardened: [ok]
+      fx-incomplete: [ok]
+      fx-keys: [ok]
+      fx-noprobe: [ok]
+      fx-open: [ok]
+      fx-attested: [ok]
+      fx-project: [ok]
+      fx-prompted: [ok]
+      fx-review: [ok]
+      fx-services: [ok]
+      fx-strict: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [ok]
+      fx-codex: [ok]
+      fx-flags: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+  # M3: an official marketplace with no autoUpdate entry auto-updates.
+  - agentreach: SC-03
+    control: marketplaces_not_auto_updating
+    fixtures:
+      fx-keys: [alarm, ok]
+      fx-noprobe: [ok]
+      fx-open: [ok]
+      fx-attested: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+  # M16: a plugin with no enabledPlugins decision follows defaultEnabled and loads.
+  - agentreach: SC-04
+    control: plugins_inventoried
+    fixtures:
+      fx-hardened: [ok]
+      fx-keys: [info]
+      fx-noprobe: [info]
+      fx-open: [info]
+      fx-attested: [info]
+      fx-review: [info]
+      fx-strict: [info]
+      fx-managed: [ok]
+  # M16: version unknown is not a release; an all-digit date version is.
+  - agentreach: SC-05
+    control: plugins_pinned_to_release
+    fixtures:
+      fx-hardened: [skip]
+      fx-keys: [info, ok]
+      fx-noprobe: [ok]
+      fx-open: [ok]
+      fx-attested: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-managed: [skip]
+    rows:
+      fx-hardened: 1
+      fx-keys: 2
+      fx-noprobe: 1
+      fx-open: 1
+      fx-attested: 1
+      fx-review: 1
+      fx-strict: 1
+      fx-managed: 1
+  # M6: skills of a disabled plugin do not load.
+  - agentreach: SC-12
+    control: skills_third_party_reviewed
+    fixtures:
+      fx-hardened: [skip]
+      fx-noprobe: [info]
+      fx-open: [info]
+      fx-attested: [info]
+      fx-review: [info]
+      fx-strict: [info]
+      fx-managed: [skip]
+  # M9: uv run <file.py> runs a local file and has no registry version, so only the uvx server is listed.
+  - agentreach: MCP-02
+    control: launchers_pinned
+    fixtures:
+      fx-keys: [alarm]
+    rows:
+      fx-keys: 1
+  # M13: a deny entry only in a project file protects that project only.
+  - agentreach: HD-31
+    control: web_fetch_denied
+    fixtures:
+      fx-auto: [ok]
+      fx-bypassable: [ok]
+      fx-hardened: [ok]
+      fx-incomplete: [alarm]
+      fx-keys: [alarm]
+      fx-noprobe: [alarm]
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-project: [alarm]
+      fx-prompted: [alarm]
+      fx-review: [ok]
+      fx-services: [alarm]
+      fx-strict: [ok]
+      fx-strict-services: [alarm]
+      fx-unknown: [alarm]
+      fx-codex: [alarm]
+      fx-flags: [alarm]
+      fx-managed: [ok]
+      fx-agents: [alarm]
+  # M15: force push and hard reset must both be denied; fx-keys denies force push only.
+  - agentreach: HD-37
+    control: force_push_denied
+    fixtures:
+      fx-auto: [alarm]
+      fx-bypassable: [alarm]
+      fx-hardened: [alarm]
+      fx-incomplete: [alarm]
+      fx-keys: [alarm]
+      fx-noprobe: [alarm]
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-project: [alarm]
+      fx-prompted: [alarm]
+      fx-review: [alarm]
+      fx-services: [alarm]
+      fx-strict: [alarm]
+      fx-strict-services: [alarm]
+      fx-unknown: [alarm]
+      fx-codex: [alarm]
+      fx-flags: [alarm]
+      fx-managed: [alarm]
+      fx-agents: [alarm]
+  # M14: allowedHttpHookUrls merges, so a project file that adds a URL alarms.
+  - agentreach: HD-45
+    control: http_hook_urls_restricted
+    fixtures:
+      fx-auto: [info]
+      fx-bypassable: [info]
+      fx-hardened: [info]
+      fx-incomplete: [info]
+      fx-keys: [alarm]
+      fx-noprobe: [info]
+      fx-open: [info]
+      fx-attested: [info]
+      fx-project: [info]
+      fx-prompted: [info]
+      fx-review: [info]
+      fx-services: [info]
+      fx-strict: [info]
+      fx-strict-services: [info]
+      fx-unknown: [info]
+      fx-codex: [info]
+      fx-flags: [info]
+      fx-managed: [info]
+      fx-agents: [info]
+  # M14: a ConfigChange hook in a project file covers that project only.
+  - agentreach: HD-46
+    control: config_change_hook_present
+    fixtures:
+      fx-auto: [alarm]
+      fx-bypassable: [alarm]
+      fx-hardened: [alarm]
+      fx-incomplete: [alarm]
+      fx-keys: [info]
+      fx-noprobe: [alarm]
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-project: [alarm]
+      fx-prompted: [alarm]
+      fx-review: [alarm]
+      fx-services: [alarm]
+      fx-strict: [alarm]
+      fx-strict-services: [alarm]
+      fx-unknown: [alarm]
+      fx-codex: [alarm]
+      fx-flags: [alarm]
+      fx-managed: [alarm]
+      fx-agents: [alarm]
+  # M15: sandbox keys skip while the sandbox is off.
+  - agentreach: HD-17
+    control: sandbox_fail_if_unavailable
+    fixtures:
+      fx-auto: [ok]
+      fx-bypassable: [alarm]
+      fx-hardened: [ok]
+      fx-incomplete: [skip]
+      fx-keys: [skip]
+      fx-noprobe: [skip]
+      fx-open: [skip]
+      fx-attested: [skip]
+      fx-project: [skip]
+      fx-prompted: [skip]
+      fx-review: [ok]
+      fx-services: [alarm]
+      fx-strict: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [skip]
+      fx-codex: [skip]
+      fx-flags: [skip]
+      fx-managed: [ok]
+      fx-agents: [skip]
+  # M15: sandbox keys skip while the sandbox is off.
+  - agentreach: HD-23
+    control: sandbox_no_all_unix_sockets
+    fixtures:
+      fx-auto: [ok]
+      fx-bypassable: [ok]
+      fx-hardened: [ok]
+      fx-incomplete: [skip]
+      fx-keys: [skip]
+      fx-noprobe: [skip]
+      fx-open: [skip]
+      fx-attested: [skip]
+      fx-project: [skip]
+      fx-prompted: [skip]
+      fx-review: [ok]
+      fx-services: [ok]
+      fx-strict: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [skip]
+      fx-codex: [skip]
+      fx-flags: [skip]
+      fx-managed: [ok]
+      fx-agents: [skip]
+  # M15: the 30-day default exceeds a 14-day limit.
+  - agentreach: HD-53
+    control: cleanup_period_bounded
+    vars:
+      max_cleanup_period_days: 14
+    fixtures:
+      fx-auto: [alarm]
+      fx-bypassable: [alarm]
+      fx-hardened: [alarm]
+      fx-incomplete: [alarm]
+      fx-keys: [alarm]
+      fx-noprobe: [alarm]
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-project: [alarm]
+      fx-prompted: [alarm]
+      fx-review: [alarm]
+      fx-services: [alarm]
+      fx-strict: [alarm]
+      fx-strict-services: [alarm]
+      fx-unknown: [alarm]
+      fx-codex: [alarm]
+      fx-flags: [alarm]
+      fx-managed: [alarm]
+      fx-agents: [alarm]
+  # M15: crossSessionInbound refuse in a project file applies in that project only.
+  - agentreach: HD-58
+    control: cross_session_inbound_refused
+    fixtures:
+      fx-auto: [info]
+      fx-bypassable: [info]
+      fx-hardened: [info]
+      fx-incomplete: [info]
+      fx-keys: [info]
+      fx-noprobe: [info]
+      fx-open: [info]
+      fx-attested: [info]
+      fx-project: [info]
+      fx-prompted: [info]
+      fx-review: [info]
+      fx-services: [info]
+      fx-strict: [info]
+      fx-strict-services: [info]
+      fx-unknown: [info]
+      fx-codex: [info]
+      fx-flags: [info]
+      fx-managed: [info]
+      fx-agents: [info]
+
+  # CI workflows (agentreach_ci_workflow). fx-open and fx-attested carry the
+  # pull_request_target pattern the claude-code-action security guide warns
+  # about plus a run step with a blanket Bash rule; fx-hardened carries the
+  # documented @claude workflow, pinned.
+  - agentreach: CI-01
+    control: ci_pr_head_not_checked_out
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-managed: [ok]
+    rows:
+      fx-open: 2
+      fx-hardened: 1
+      fx-managed: 1
+  - agentreach: CI-02
+    control: ci_actor_check_kept
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-managed: [ok]
+    reasons:
+      fx-open: "allowed_bots: '*' lets any bot or GitHub App start it"
+  - agentreach: CI-03
+    control: ci_shell_restricted
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-managed: [ok]
+    reasons:
+      fx-open: "a blanket Bash allow rule"
+  - agentreach: CI-04
+    control: ci_actions_pinned
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-managed: [ok]
+    rows:
+      fx-open: 1
+      fx-managed: 1
+  # Agent SDK launchers (agentreach_sdk_launcher): fx-open and fx-attested pass
+  # bypassPermissions with no sandbox; fx-hardened passes dontAsk.
+  - agentreach: AG-08
+    control: sdk_launchers_not_bypassed
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-managed: [ok]
+    reasons:
+      fx-hardened: "starts SDK sessions in dontAsk."
+
+  # The managed_only_sql template's branches, on fx-managed (the only host
+  # with an administrator): a key set in managed settings is ok, a key pasted
+  # into a scope Claude Code ignores alarms, and a key absent under a managed
+  # deployment alarms. Before fx-managed every managed-only control returned
+  # skip everywhere and none of these branches ran in CI.
+  - agentreach: HD-02
+    control: managed_hooks_only
+    fixtures:
+      fx-open: [skip]
+      fx-attested: [skip]
+      fx-hardened: [skip]
+      fx-bypassable: [skip]
+      fx-auto: [skip]
+      fx-review: [skip]
+      fx-strict: [skip]
+      fx-prompted: [skip]
+      fx-services: [skip]
+      fx-strict-services: [skip]
+      fx-project: [skip]
+      fx-keys: [skip]
+      fx-managed: [ok]
+      fx-codex: [skip]
+      fx-flags: [skip]
+      fx-unknown: [skip]
+      fx-incomplete: [skip]
+      fx-noprobe: [skip]
+      fx-agents: [skip]
+    reasons:
+      fx-managed: "is set in managed settings"
+  - agentreach: HD-11
+    control: remote_settings_refresh_forced
+    fixtures:
+      fx-open: [skip]
+      fx-attested: [skip]
+      fx-hardened: [skip]
+      fx-bypassable: [skip]
+      fx-auto: [skip]
+      fx-review: [skip]
+      fx-strict: [skip]
+      fx-prompted: [skip]
+      fx-services: [skip]
+      fx-strict-services: [skip]
+      fx-project: [skip]
+      fx-keys: [skip]
+      fx-managed: [alarm]
+      fx-codex: [skip]
+      fx-flags: [skip]
+      fx-unknown: [skip]
+      fx-incomplete: [skip]
+      fx-noprobe: [skip]
+      fx-agents: [skip]
+    reasons:
+      fx-managed: "is set in user settings, where Claude Code ignores it"
+  - agentreach: HD-01
+    control: managed_permission_rules_only
+    vars:
+      deployment: teams
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [alarm]
+      fx-bypassable: [alarm]
+      fx-auto: [alarm]
+      fx-review: [alarm]
+      fx-strict: [alarm]
+      fx-prompted: [alarm]
+      fx-services: [alarm]
+      fx-strict-services: [alarm]
+      fx-project: [alarm]
+      fx-keys: [alarm]
+      fx-managed: [alarm]
+      fx-codex: [alarm]
+      fx-flags: [alarm]
+      fx-unknown: [alarm]
+      fx-incomplete: [alarm]
+      fx-noprobe: [alarm]
+      fx-agents: [alarm]
+    reasons:
+      fx-managed: "is not set in managed settings"

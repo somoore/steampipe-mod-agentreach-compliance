@@ -1,0 +1,60 @@
+# Dashboard checks run by ci/dashboard_check.py on every fixture host: no
+# panel may error or show another fixture machine's files, the verdict card has the listed type, and each listed
+# table column contains the listed text in some row.
+# Text no panel may show on any host (audit M12: hooks run outside the
+# sandbox, so no sandbox rule allows them; a rule cannot be present and not
+# match).
+never:
+  - "allowed by sandbox rule"
+  - "allowed by a sandbox rule"
+  - "rule present but not matching"
+# The page for this host must show the same data from the full fixture
+# connection and from one that holds only this host (audit N10).
+isolation:
+  host: fx-open
+  connection: agentreach_fixtures_one
+hosts:
+  fx-open:
+    verdict: alert
+    tables:
+      - title: Worst attack paths
+        column: Fix
+        # A directory takes /** (audit M17).
+        contains: ["enforce the sandbox", "denyRead ~/.ssh", "permissions.deny Read(~/.ssh/**)"]
+      - title: Hooks that run outside the sandbox
+        column: State
+        contains: ["enabled"]
+  fx-hardened: {verdict: ok}
+  fx-managed: {verdict: ok}
+  fx-agents: {verdict: info}
+  fx-bypassable: {verdict: ok}
+  fx-auto: {verdict: ok}
+  fx-review: {verdict: ok}
+  fx-strict: {verdict: ok}
+  fx-prompted: {verdict: info}
+  fx-services: {verdict: info}
+  fx-strict-services: {verdict: info}
+  fx-project: {verdict: alert}
+  fx-incomplete: {verdict: info}
+  fx-noprobe: {verdict: info}
+  fx-keys: {verdict: info}
+  fx-codex: {verdict: info}
+  fx-flags: {verdict: alert}
+  fx-unknown:
+    verdict: info
+    verdict_contains: "the permission mode is unknown"
+
+# var.sensitive_categories narrows every panel (audit M11).
+variants:
+  - host: fx-open
+    vars:
+      sensitive_categories: ["env_file"]
+    verdict: alert
+    tables:
+      - title: Private files the agent can read
+        column: Path
+        contains: ["~/proj/.env"]
+        rows: 1
+      - title: Worst attack paths
+        column: Fix
+        lacks: [".ssh"]

@@ -1,0 +1,116 @@
+[
+  {
+    "about": "Claude Code in default mode with the sandbox off and an SSH key, beside the three other agents as inventory (OpenCode with permissive defaults plus a bash pattern policy, a remote MCP server and a markdown agent; Cline with an MCP server, global and project rules and unreadable approval state; Grok Build in ask mode with allow and deny bash rules, a strict sandbox profile and a project MCP server), and ACP harnesses: Zed agent servers that can start Claude Code and OpenCode through adapters whose options agentreach cannot see. No control judges the three; the host pins that their rows never leak into the Claude Code rows.",
+    "host": "fx-agents",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "As fx-open, with egress_allowlist declared by the operator: paths through the internet exits are attested, not verified, and still count; the local services stay candidates.",
+    "host": "fx-attested",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "No defaultMode on a version whose built-in default is auto.",
+    "host": "fx-auto",
+    "probe": true,
+    "version": "2.1.300"
+  },
+  {
+    "about": "As fx-hardened, but allowUnsandboxedCommands and failIfUnavailable left at their defaults: the sandbox is enabled, not enforced.",
+    "host": "fx-bypassable",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "Claude Code hardened as fx-prompted is not; Codex with no sandbox_mode, a trusted project that turns network on, adds the home folder as a writable root and auto-approves an MCP server, an untrusted project with a .env, an exec-policy rule that only prompts, a trusted user hook, an untrusted project hook, notify, a user skill, a project skill writable by others, a plugin that bundles a hook and two skills (one source), the home folder as a trusted project (its .codex is the user layer, not read twice), and a Codex action anyone can trigger from an issue with no sandbox.",
+    "host": "fx-codex",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "As fx-prompted, but ~/.zshrc aliases claude to claude --dangerously-skip-permissions and codex to codex --yolo: no settings file shows it, every session typed as claude starts in bypassPermissions and Codex runs with no sandbox and no approvals. A second alias, yolo, is listed but not modelled.",
+    "host": "fx-flags",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "Every core leg closed: enforced sandbox with denyRead and strictAllowlist, Read and WebFetch denied, default mode, MCP server approved and credential by reference, one installed plugin turned off in settings, the documented @claude workflow pinned to a commit, and an Agent SDK app that starts sessions in dontAsk with no filesystem settings.",
+    "host": "fx-hardened",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "User settings.json does not parse, so the configuration the controls read is incomplete.",
+    "host": "fx-incomplete",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "Settings the hardening and supply-chain controls must read per scope: a project that turns on every project MCP server, denies WebFetch only for itself, adds its own HTTP hook URL and ConfigChange hook, and sets keys Claude Code ignores there; user MCP servers launched by uv run and uvx; the official marketplace with no autoUpdate entry; plugins versioned unknown and by date.",
+    "host": "fx-keys",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "As fx-hardened, plus an administrator: managed-settings.json sets allowManagedHooksOnly where Claude Code reads it, and forceRemoteSettingsRefresh is pasted into user settings, where Claude Code ignores it. The managed-only hardening controls get their ok and their alarm branch on one host.",
+    "host": "fx-managed",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "Configuration only: probes off and the agent version unknown, so reach and the built-in permission mode cannot be assessed.",
+    "host": "fx-noprobe",
+    "probe": false,
+    "version": ""
+  },
+  {
+    "about": "Nothing hardened: sandbox off, bypassPermissions, an enabled plugin with a hook, an unapproved project MCP server with an inline credential, postgres and Docker listening locally, a pull_request_target workflow that checks out the head and runs Claude with bypassPermissions, and an Agent SDK app that starts sessions in bypassPermissions.",
+    "host": "fx-open",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "Machine-wide auto mode with the sandbox off and a user allow rule for python3, which auto mode drops; the first project's local settings start sessions in default mode, so the rule applies there; a second project turns the sandbox on and adds a WebFetch domain to its allowlist.",
+    "host": "fx-project",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "Sandbox off in default mode with a group-writable CLAUDE.md and an unapproved MCP server: the legs exist, but every exit and every write needs a human prompt.",
+    "host": "fx-prompted",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "As fx-hardened, plus an enabled plugin with a hook, a CLAUDE.md with an HTML comment, and a group-writable rules file: sources that need review even when the sandbox holds.",
+    "host": "fx-review",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "Sandbox on in default mode with the unsandboxed retry left on and no strictAllowlist; postgres and a Docker daemon listen on loopback and the Docker Desktop socket exists. Local services are decided by the mode, not blocked.",
+    "host": "fx-services",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "As fx-review, plus autoAllowBashIfSandboxed false: sandboxed commands prompt, so every write an untrusted source could cause needs a human.",
+    "host": "fx-strict",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "As fx-services with strictAllowlist and allowUnsandboxedCommands false: the sandbox refuses the TCP services and the socket in every mode.",
+    "host": "fx-strict-services",
+    "probe": true,
+    "version": "2.1.312"
+  },
+  {
+    "about": "Probes on, but the agent version is unknown and no defaultMode is set, so the permission mode and every gate that depends on it are unknown.",
+    "host": "fx-unknown",
+    "probe": true,
+    "version": ""
+  }
+]

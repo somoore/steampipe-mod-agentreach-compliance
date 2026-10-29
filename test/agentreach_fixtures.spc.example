@@ -1,0 +1,15 @@
+# Installed by steampipe-mod-agentreach-compliance/ci/fixtures.sh -i. Reads the
+# mod's committed fixture snapshots (fleet mode) so controls can be tested
+# against known scenarios. Safe to delete; the script recreates it.
+connection "agentreach_fixtures" {
+  plugin         = "local/agentreach"
+  snapshot_paths = ["@REPO@/test/snapshots/*.json"]
+}
+
+# fx-open alone: ci/dashboard_check.py renders the dashboard for fx-open from
+# both connections and requires the same data, which proves every panel is
+# filtered to the selected machine.
+connection "agentreach_fixtures_one" {
+  plugin         = "local/agentreach"
+  snapshot_paths = ["@REPO@/test/snapshots/fx-open.json"]
+}

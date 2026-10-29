@@ -1,0 +1,588 @@
+# AgentReach assessment profile: the core controls and what each one proves.
+#
+# One record per core control. ci/checks.sh checks that every record is
+# complete and that its class and aisvs ids match the control's tags;
+# ci/fixtures.sh runs each control against the fixture snapshots and checks
+# the statuses listed under `fixtures`.
+#
+# AISVS is cited by requirement id and paraphrased. Its text is CC BY-SA 4.0
+# and is not reproduced here; follow the link for the wording.
+
+schema: 1
+profile: AgentReach assessment profile
+as_of: 2026-10-29
+
+primary_standard:
+  name: OWASP Artificial Intelligence Security Verification Standard (AISVS)
+  version: "1.01"
+  commit: 3ae3af45c363467b8ad823ef79219236e67ca22f
+  url: https://github.com/OWASP/AISVS/tree/v1.01/1.01/en
+  licence: CC BY-SA 4.0. Cited by id, paraphrased, never copied.
+  id_form: >-
+    v1.01-C9.3.1 for chapter requirements, as the AISVS README defines.
+    Appendix C ids are written v1.01-AC.3.2 by extension; the README defines
+    the versioned form for chapter ids only.
+  why_1_01: >-
+    1.01 is the latest stable release and a superset of 1.0 (no ids were
+    renumbered). It adds AC.3.7, C9.3.9 and C9.5.7, which bear on coding
+    agents. C9.2.1 changed wording between the two.
+
+secondary_guidance:
+  - name: CIS AI Agents Companion Guide
+    version: "1.0 (2026-04-20)"
+    use: Safeguard numbers only; the guide is CC BY-NC-ND.
+  - name: CIS MCP Server Benchmark
+    version: "1.0.0 (2026-09-16)"
+    use: Not reviewed. The download is behind a registration form.
+
+classes:
+  mapped: >-
+    The control produces evidence for a named AISVS requirement. The
+    verification field says whether that evidence is enough on its own.
+  agentreach_extension: >-
+    A AgentReach requirement with no honest AISVS counterpart. Related ids, when
+    listed, share a theme but are not satisfied by the control.
+  needs_validation: >-
+    Not yet in the core: no record here and no fixture expectations. Every
+    control outside this file carries this class.
+
+verification:
+  full: The control's evidence alone shows the requirement is met or not met.
+  supporting: >-
+    The control shows a configuration fact or a reachability result that the
+    requirement depends on. A verifier still needs runtime evidence (the
+    sandbox actually holding, a prompt actually shown, a screen actually run).
+
+fixtures:
+  snapshots: test/snapshots/*.json
+  generator: steampipe-plugin-agentreach cmd/agentreach-fixtures (go run ./cmd/agentreach-fixtures -out <mod>/test/snapshots)
+  generated_on: any build machine; the generator pins the platform to darwin/arm64 with the sandbox runtime installed
+  connection: agentreach_fixtures, with snapshot_paths pointing at test/snapshots/*.json
+  hosts:
+    fx-open: Nothing hardened. Sandbox off, bypassPermissions, an enabled plugin with a hook, an unapproved project MCP server with an inline credential, postgres and Docker listening locally, and a pull_request_target workflow that checks out the head and runs Claude with bypassPermissions.
+    fx-attested: As fx-open, with egress_allowlist declared by the operator. Paths through the internet and WebFetch exits are attested (declared, not verified) and still count; the local services stay candidates.
+    fx-hardened: Enforced sandbox with denyRead and strictAllowlist, Read and WebFetch denied, default mode, MCP server approved with its credential by reference, one installed plugin turned off in settings (its files do not load), and the documented @claude workflow pinned to a commit.
+    fx-bypassable: As fx-hardened, but allowUnsandboxedCommands and failIfUnavailable at their defaults, so the sandbox is enabled and not enforced.
+    fx-auto: As fx-hardened with no defaultMode, on a version whose built-in default is auto.
+    fx-review: As fx-hardened, plus an enabled plugin with a hook, a CLAUDE.md with an HTML comment and a group-writable rules file.
+    fx-strict: As fx-review, plus autoAllowBashIfSandboxed false.
+    fx-prompted: Sandbox off in default mode, a group-writable CLAUDE.md and an unapproved MCP server.
+    fx-incomplete: User settings.json does not parse.
+    fx-noprobe: Probes off and the agent version unknown.
+    fx-services: Sandbox on in default mode, unsandboxed retry on, no strictAllowlist; postgres, a Docker daemon on TCP and the Docker Desktop socket accept connections.
+    fx-strict-services: As fx-services with strictAllowlist and allowUnsandboxedCommands false, so the sandbox refuses every local service.
+    fx-project: Machine-wide auto mode, sandbox off, a user allow rule for python3 that auto mode drops; one project's local settings start in default mode (the rule applies there), another turns the sandbox on and adds a WebFetch domain.
+    fx-keys: Default mode, sandbox off; a project turns on every project MCP server, denies WebFetch for itself only, adds its own HTTP hook URL and ConfigChange hook, and sets keys Claude Code ignores there; user MCP servers launched by uv run and uvx; the official marketplace with no autoUpdate entry; plugins versioned unknown and by date.
+    fx-managed: As fx-hardened, plus an administrator whose managed-settings.json sets allowManagedHooksOnly where Claude Code reads it, while forceRemoteSettingsRefresh is pasted into user settings where Claude Code ignores it. The managed-only hardening controls get their ok branch and their alarm branch on one host.
+    fx-agents: Claude Code in default mode with the sandbox off and an SSH key, beside the three other agents as inventory (OpenCode with permissive defaults plus a bash pattern policy, a remote MCP server and a markdown agent; Cline with an MCP server, global and project rules and unreadable approval state; Grok Build in ask mode with allow and deny bash rules, a strict sandbox profile and a project MCP server). No control judges the three; the host pins that their rows never leak into the Claude Code rows.
+    fx-codex: Claude Code in default mode with the sandbox off and an SSH key; Codex config (no sandbox_mode, a trusted project with network on, the home folder as a writable root and an auto-approved MCP server, an untrusted project, hooks, notify, skills and a plugin with a hook and a skill). Core controls read only the Claude Code rows; the host pins that Codex rows do not leak into them, apart from the ~/.zshrc it adds, which is one Claude Code write target, and a Codex action anyone can trigger from an issue with no sandbox.
+    fx-flags: As fx-prompted, but ~/.zshrc aliases claude to claude --dangerously-skip-permissions and codex to codex --yolo, so sessions start in bypassPermissions while every settings file says default; a second alias, yolo, carries --permission-mode bypassPermissions.
+    fx-unknown: Probes on, agent version unknown, no defaultMode, so the permission mode is unknown.
+
+defaults:
+  applicability:
+    agents: [claude_code]
+    os: [darwin, linux]
+    claude_code: >-
+      Behaviour as documented at code.claude.com/docs, verified against
+      Claude Code 2.1.312 (the plugin's ModelBasisClaudeCode;
+      agentreach_agent.model_basis_stale flags an install newer than the
+      basis, and the plugin's weekly claude-code-drift workflow alarms when
+      the cited documents change). The fixtures pin 2.1.312 (2.1.300 for
+      fx-auto).
+    plugin: steampipe-plugin-agentreach v0.2.0 (needs agentreach_path.approval and agentreach_agent.network_approval)
+
+controls:
+  - control: sandbox_enabled
+    agentreach: AG-01
+    class: mapped
+    aisvs:
+      ids: [v1.01-C9.3.1]
+      verification: supporting
+      gap: >-
+        C9.3.1 asks that tools run in a least-privilege sandbox. AG-01 shows
+        the shell tool is configured to run in an enforced sandbox; it does
+        not show the sandbox holds at runtime, and it covers the shell only
+        (MCP servers, hooks and WebFetch run outside it).
+    related: [v1.01-C4.1]
+    threat: An injected instruction runs a shell command with the developer's full file and network access.
+    evidence:
+      pass: agentreach_agent.sandbox_enforced is true. That needs sandbox.enabled, no unsandboxed retry (allowUnsandboxedCommands false), failIfUnavailable true or a runtime present, no excludedCommands and the filesystem layer on.
+      fail: sandbox_enforced is false; sandbox_bypasses names each way a command leaves the sandbox. With require_enforced set to false an enabled but bypassable sandbox reports info.
+      unknown: Any settings source could not be read (collect_errors), reported as skip with "Not assessed".
+    applicability:
+      versions: The unsandboxed retry and its setting are documented for current 2.1.x releases; older releases are not modelled.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-bypassable: [alarm]
+      fx-auto: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [alarm]
+      fx-incomplete: [skip]
+      fx-noprobe: [alarm]
+      fx-project: [alarm]
+      fx-services: [alarm]
+      fx-strict-services: [ok]
+      fx-unknown: [alarm]
+      fx-keys: [alarm]
+      fx-managed: [ok]
+      fx-agents: [alarm]
+      fx-codex: [alarm]
+      fx-flags: [alarm]
+    untested:
+      - require_enforced = false (info branch)
+      - sandbox runtime missing with failIfUnavailable false; the fixture generator pins the runtime as installed
+      - a project settings file that sets sandbox.enabled for one directory
+
+  - control: permission_mode_allowed
+    agentreach: AG-02
+    class: mapped
+    aisvs:
+      ids: [v1.01-C9.2.1]
+      verification: supporting
+      gap: >-
+        C9.2.1 asks the runtime to block privileged or irreversible actions
+        until a person approves them. AG-02 shows which mode sessions start
+        in, and so whether approvals happen at all; it does not show which
+        actions prompt or that a prompt was answered. LT-05, LT-06 and LT-07
+        carry the per-action gates.
+    related: []
+    threat: Sessions start in a mode that approves every action, so nothing an injected instruction asks for reaches a person.
+    evidence:
+      pass: agentreach_agent.effective_permission_mode is in allowed_permission_modes and is not auto.
+      fail: The mode is outside allowed_permission_modes (bypassPermissions by default). auto reports info, because a classifier, not a person, approves actions.
+      unknown: The mode is unknown (no version, so the built-in default cannot be chosen), or a settings source could not be read.
+    applicability:
+      versions: The built-in default changed to auto in 2.1.283; earlier versions default to default mode.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [info]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [ok]
+      fx-incomplete: [skip]
+      fx-noprobe: [skip]
+      fx-project: [info]
+      fx-services: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [skip]
+      fx-keys: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+      fx-codex: [ok]
+      fx-flags: [alarm]
+    untested:
+      - dontAsk, plan and acceptEdits modes
+      - a mode forced by managed settings (a --permission-mode flag on the default claude alias is covered by fx-flags)
+
+  - control: assessment_complete
+    agentreach: AG-06
+    class: agentreach_extension
+    aisvs:
+      ids: []
+      verification: none
+    related: []
+    threat: A verdict built on missing evidence reads as a pass.
+    evidence:
+      pass: agentreach_agent.collect_errors is empty and agentreach_agent.probed is true.
+      fail: Any collect error (a settings file that does not parse, an unreadable managed source) or probes off. The reason lists each cause.
+      unknown: Never; this control reports what is unknown.
+    fixtures:
+      fx-open: [ok]
+      fx-attested: [ok]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [ok]
+      fx-incomplete: [alarm]
+      fx-noprobe: [alarm]
+      fx-project: [ok]
+      fx-services: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [ok]
+      fx-keys: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+      fx-codex: [ok]
+      fx-flags: [ok]
+    untested:
+      - an unreadable managed settings source
+      - a snapshot file that could not be loaded in fleet mode
+
+  - control: launch_flags_reviewed
+    agentreach: AG-07
+    class: agentreach_extension
+    aisvs:
+      ids: []
+      verification: none
+    related: []
+    threat: An alias or a running session starts Claude Code with a flag that skips permission checks, while every settings file still says default.
+    evidence:
+      pass: No agentreach_launch_flag row for claude_code carries --dangerously-skip-permissions, --allow-dangerously-skip-permissions or --permission-mode bypassPermissions, or permissions.disableBypassPermissionsMode is disable.
+      fail: Such a flag on the default claude alias or function, or on a running session (alarm); on another alias (info).
+      unknown: Never. Aliases defined outside the startup files agentreach reads, and sessions started after the scan, are not seen.
+    fixtures:
+      fx-open: [ok]
+      fx-attested: [ok]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [ok]
+      fx-incomplete: [ok]
+      fx-noprobe: [ok]
+      fx-project: [ok]
+      fx-services: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [ok]
+      fx-keys: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+      fx-codex: [ok]
+      fx-flags: [alarm]
+    untested:
+      - running sessions (live only; Options.Processes covers the parser in the plugin tests)
+      - a bypass flag on a non-default alias alone (info)
+
+  - control: private_data_reachable
+    agentreach: LT-01
+    class: mapped
+    aisvs:
+      ids: [v1.01-AC.3.2]
+      verification: supporting
+      gap: >-
+        AC.3.2 asks for technical controls that keep sensitive material out
+        of what is sent to the model. LT-01 shows whether the agent's file
+        and shell tools are blocked from known credential and token files;
+        it does not cover secrets inside project files, command output or
+        environment variables, and it does not observe what reaches the
+        model.
+    related: [v1.01-AC.3.1, v1.01-AC.3.7]
+    threat: The agent reads a key or token file and the content enters the context, from where an exit can carry it off.
+    evidence:
+      pass: The file does not exist, or neither reachable_via_bash nor reachable_via_read_tool is true. Readability is a one-byte read as the current user; whether the agent's rules stop each tool path is inferred from the effective sandbox and permission rules.
+      fail: Either tool path is open, or observed mode ran the read inside srt and the result disagreed with the model (model_agrees false).
+      unknown: reach_evidence is unknown, probes were off, or a settings source could not be read.
+    applicability:
+      notes: Observed mode needs srt; without it every verdict is inferred from configuration.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [alarm]
+      fx-incomplete: [skip]
+      fx-noprobe: [skip]
+      fx-project: [alarm]
+      fx-services: [alarm]
+      fx-strict-services: [alarm]
+      fx-unknown: [alarm]
+      fx-keys: [alarm]
+      fx-managed: [ok]
+      fx-agents: [alarm]
+      fx-codex: [alarm]
+      fx-flags: [alarm]
+    untested:
+      - model_agrees false (needs srt in observed mode)
+      - project-scoped denyRead rules applying in one directory only
+
+  - control: untrusted_instruction_sources
+    agentreach: LT-03
+    class: mapped
+    aisvs:
+      ids: [v1.01-AC.3.3]
+      verification: supporting
+      gap: >-
+        AC.3.3 asks that external context be treated as untrusted and
+        screened before it reaches the prompt. LT-03 finds which instruction
+        files come from outside the developer's control and whether they were
+        reviewed; it does not screen content and does not cover issue bodies,
+        web results or tool output.
+    related: [v1.01-AC.3.4, v1.01-C2.1]
+    threat: An instruction file someone else wrote or can rewrite tells the agent what to do.
+    evidence:
+      pass: Each instruction file is owner-written, authored inside the repository's identities, not shipped by an enabled plugin, and unchanged since a recorded review; or it comes from a disabled plugin.
+      fail: agentreach_instruction_file.untrusted is true; untrusted_reason names the cause (plugin, writable by others, third-party author, changed since review).
+      unknown: A settings source could not be read. Review signals (hidden Unicode, HTML comments, external URLs, includes) report info, not alarm.
+    fixtures:
+      fx-open: [alarm, ok]
+      fx-attested: [alarm, ok]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [ok]
+      fx-review: [alarm, info]
+      fx-strict: [alarm, info]
+      fx-prompted: [alarm]
+      fx-incomplete: [skip]
+      fx-noprobe: [alarm, ok]
+      fx-project: [ok]
+      fx-services: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [ok]
+      fx-keys: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+      fx-codex: [ok]
+      fx-flags: [alarm]
+    untested:
+      - third-party git authorship (needs a repository with another author)
+      - changed since review (needs a review ledger)
+      - hidden Unicode
+
+  - control: untrusted_mcp_servers
+    agentreach: LT-04
+    class: mapped
+    aisvs:
+      ids: [v1.01-C10.4.7]
+      verification: supporting
+      gap: >-
+        C10.4.7 asks MCP clients to show a consent and cancel dialog when a
+        local server is installed. LT-04 shows whether a decision was
+        recorded for each project server; it does not show what the person
+        saw or that the server is safe.
+    related: [v1.01-C10.4]
+    threat: A cloned repository starts a tool server whose descriptions and results reach the model, with no one having looked at it.
+    evidence:
+      pass: A recorded rejection (disabledMcpjsonServers) is ok. A recorded approval reports info so the server stays visible.
+      fail: A project server with no recorded decision.
+      unknown: A settings source could not be read.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [info]
+      fx-bypassable: [info]
+      fx-auto: [info]
+      fx-review: [info]
+      fx-strict: [info]
+      fx-prompted: [alarm]
+      fx-incomplete: [skip]
+      fx-noprobe: [alarm]
+      fx-project: [alarm]
+      fx-services: [alarm]
+      fx-strict-services: [alarm]
+      fx-unknown: [alarm]
+      fx-keys: [info]
+      fx-managed: [info]
+      fx-agents: [alarm]
+      fx-codex: [ok]
+      fx-flags: [alarm]
+    untested:
+      - a rejected server (ok branch)
+      - enableAllProjectMcpServers
+
+  - control: exit_channel_open
+    agentreach: LT-05
+    class: agentreach_extension
+    aisvs:
+      ids: []
+      verification: none
+    related: [v1.01-C9.2.1, v1.01-C9.3.5, v1.01-AC.11.4]
+    threat: An injected curl sends data to any host and nobody approves the connection.
+    evidence:
+      pass: agentreach_agent.network_approval is denied (strictAllowlist or allowManagedDomainsOnly with no way out of the sandbox, or dontAsk mode), and no project allow rule approves a network-capable command where the sandbox is off or can be left.
+      fail: network_approval is none (bypassPermissions, an allow rule, allowedDomains containing *), or a project allow rule opens the exit. prompt and classifier report info. A detected egress proxy or a declared egress allowlist lowers alarm to info.
+      unknown: network_approval is unknown (the permission mode is unknown), or a settings source could not be read.
+    applicability:
+      versions: strictAllowlist needs 2.1.219; auto mode per-command hosts need 2.1.271.
+      notes: Inferred from configuration; agentreach sends no traffic. Auto mode drops broad allow rules (blanket, wildcarded interpreters, package-manager run), and agentreach models that.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [info]
+      fx-hardened: [ok]
+      fx-bypassable: [info]
+      fx-auto: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [info]
+      fx-incomplete: [skip]
+      fx-noprobe: [skip]
+      fx-project: [alarm]
+      fx-services: [info]
+      fx-strict-services: [ok]
+      fx-unknown: [skip]
+      fx-keys: [info]
+      fx-managed: [ok]
+      fx-agents: [info]
+      fx-codex: [info]
+      fx-flags: [alarm]
+    reasons:
+      fx-attested: "Outside the agent: egress_allowlist (declared); agentreach cannot verify that it blocks this."
+    untested:
+      - classifier branch (auto mode without strictAllowlist)
+      - a project's own saved allow rule (fx-project covers a user rule that a project defaultMode brings back)
+      - a detected egress proxy or system proxy (fx-attested covers a declared egress allowlist)
+
+  - control: attack_path_count
+    agentreach: LT-06
+    class: agentreach_extension
+    aisvs:
+      ids: []
+      verification: none
+    related: [v1.01-C9.3.5, v1.01-C9.2.1]
+    threat: An untrusted source, a private file and an exit load in one session, and no step needs a person.
+    evidence:
+      pass: No candidate confidentiality path in agentreach_path for the sensitive categories.
+      fail: A candidate path whose exit approval is none. Paths where every exit needs a prompt or the classifier report info.
+      unknown: Probes off, a settings source unreadable, or a path whose exit approval is unknown.
+    applicability:
+      notes: Each leg is established separately; a path is a candidate, not a demonstrated attack. Reading the private file is not counted as a gate, because read-only commands and the Read tool run without a prompt.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [info]
+      fx-incomplete: [skip]
+      fx-noprobe: [skip]
+      fx-project: [alarm]
+      fx-services: [info]
+      fx-strict-services: [info]
+      fx-unknown: [skip]
+      fx-keys: [info]
+      fx-managed: [ok]
+      fx-agents: [info]
+      fx-codex: [info]
+      fx-flags: [alarm]
+    reasons:
+      fx-attested: "go through an exit you declared closed; agentreach did not verify that, so they still count."
+    untested:
+      - paths gated only by the classifier
+
+  - control: integrity_paths
+    agentreach: LT-07
+    class: mapped
+    aisvs:
+      ids: [v1.01-C9.2.5]
+      verification: supporting
+      gap: >-
+        C9.2.5 asks that self-modification be bounded by limits the runtime
+        enforces and the agent cannot change. LT-07 finds where untrusted
+        input can lead to writes on the agent's own settings, instructions,
+        CI or manifests with no approval; it does not test the runtime's
+        protected-path check.
+    related: [v1.01-C9.3.9, v1.01-C9.2.1]
+    threat: An injected instruction rewrites CLAUDE.md, a CI workflow or a manifest, and the change runs later with no one having approved it.
+    evidence:
+      pass: No candidate integrity path.
+      fail: A path whose write approval is none (the sandbox's auto-allow, acceptEdits or auto mode in the working directory, bypassPermissions, an allow rule). Paths where every write needs a prompt or the classifier report info.
+      unknown: Probes off, a settings source unreadable, or a write whose approval is unknown.
+    applicability:
+      notes: Protected paths and files follow the permission-modes list as of 2026-10-28.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [ok]
+      fx-review: [alarm]
+      fx-strict: [info]
+      fx-prompted: [info]
+      fx-incomplete: [skip]
+      fx-noprobe: [skip]
+      fx-project: [alarm]
+      fx-services: [alarm]
+      fx-strict-services: [alarm]
+      fx-unknown: [skip]
+      fx-keys: [info]
+      fx-managed: [ok]
+      fx-agents: [info]
+      fx-codex: [info]
+      fx-flags: [alarm]
+    untested:
+      - classifier-gated writes (auto mode outside the working directory)
+      - symlinked settings files
+
+  - control: no_inline_secrets
+    agentreach: MCP-01
+    class: agentreach_extension
+    aisvs:
+      ids: []
+      verification: none
+    related: [v1.01-C9.5.4, v1.01-AC.3.7]
+    threat: A key written into an MCP definition sits in a file the agent can read and, in .mcp.json, in the repository.
+    rationale: >-
+      C9.5.4 is about credentials reaching the model's context. MCP-01 checks
+      where a credential is stored, not whether it reaches the context, so it
+      is a AgentReach requirement with C9.5.4 related rather than evidence for it.
+    evidence:
+      pass: No env, header, arg or url value shaped like a credential; ${VAR} references are not counted.
+      fail: agentreach_mcp_server.has_inline_secret is true. The value is never stored.
+      unknown: A settings source could not be read.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [ok]
+      fx-review: [ok]
+      fx-strict: [ok]
+      fx-prompted: [ok]
+      fx-incomplete: [skip]
+      fx-noprobe: [alarm]
+      fx-project: [ok]
+      fx-services: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [ok]
+      fx-keys: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+      fx-codex: [ok]
+      fx-flags: [ok]
+    untested:
+      - a credential in an http header or url
+
+  - control: plugin_hooks_outside_sandbox
+    agentreach: HK-05
+    class: mapped
+    aisvs:
+      ids: [v1.01-C9.3.1]
+      verification: supporting
+      gap: >-
+        C9.3.1 asks that plugins run sandboxed or isolated. Claude Code runs
+        hooks as the user outside the sandbox, so every running plugin hook
+        is a gap against it; HK-05 lists them. It does not read the hook's
+        code.
+    related: [v1.01-C6.2]
+    threat: A plugin hook runs with the developer's full access whatever the sandbox does.
+    evidence:
+      pass: No plugin hook runs (none installed, the plugin is disabled, disableAllHooks, or allowManagedHooksOnly).
+      fail: A running plugin hook with the sandbox off. With the sandbox on it reports info, because it may be the only exit left.
+      unknown: A settings source could not be read.
+    fixtures:
+      fx-open: [alarm]
+      fx-attested: [alarm]
+      fx-hardened: [ok]
+      fx-bypassable: [ok]
+      fx-auto: [ok]
+      fx-review: [info]
+      fx-strict: [info]
+      fx-prompted: [ok]
+      fx-incomplete: [skip]
+      fx-noprobe: [alarm]
+      fx-project: [ok]
+      fx-services: [ok]
+      fx-strict-services: [ok]
+      fx-unknown: [ok]
+      fx-keys: [ok]
+      fx-managed: [ok]
+      fx-agents: [ok]
+      fx-codex: [ok]
+      fx-flags: [ok]
+    untested:
+      - disableAllHooks and allowManagedHooksOnly
+      - a disabled plugin

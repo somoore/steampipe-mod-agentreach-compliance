@@ -1,0 +1,101 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Parse, list, lint and secret-scan the mod
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # gitleaks scans the whole history
+
+      - name: Install Powerpipe (pinned release, checksum-verified)
+        env:
+          POWERPIPE_VERSION: "1.5.6"
+          POWERPIPE_ASSET: powerpipe.linux.amd64.tar.gz
+        run: |
+          set -euo pipefail
+          curl -fsSLo "/tmp/$POWERPIPE_ASSET" "https://github.com/turbot/powerpipe/releases/download/v${POWERPIPE_VERSION}/${POWERPIPE_ASSET}"
+          curl -fsSLo /tmp/checksums.txt "https://github.com/turbot/powerpipe/releases/download/v${POWERPIPE_VERSION}/checksums.txt"
+          grep " $POWERPIPE_ASSET\$" /tmp/checksums.txt | (cd /tmp && sha256sum -c -)
+          sudo tar -xzf "/tmp/$POWERPIPE_ASSET" -C /usr/local/bin powerpipe
+          powerpipe --version
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -fsSLo /tmp/gl.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gl.tgz" | sha256sum -c -
+          sudo tar -xzf /tmp/gl.tgz -C /usr/local/bin gitleaks
+
+      - name: Install PyYAML for the spec check
+        run: python3 -m pip install --user "pyyaml==6.0.2"
+
+      # The fixture section skips here (no Steampipe); the fixtures job runs it.
+      - name: Run checks
+        env:
+          AGENTREACH_GITLEAKS_REQUIRED: "1"
+        run: ./ci/checks.sh
+
+  fixtures:
+    name: Controls and dashboard against fixtures (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: steampipe-mod-agentreach-compliance
+
+      # The plugin repository is public; the mod's fixture job checks it out
+      # beside the mod, as the local directory layout expects.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: somoore/steampipe-plugin-agentreach
+          path: steampipe-plugin-agentreach
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: steampipe-plugin-agentreach/go.mod
+          cache-dependency-path: steampipe-plugin-agentreach/go.sum
+
+      - name: Install Steampipe and Powerpipe (pinned releases, checksum-verified)
+        env:
+          STEAMPIPE_VERSION: "2.4.8"
+          POWERPIPE_VERSION: "1.5.6"
+        run: |
+          set -euo pipefail
+          install_release() {
+            repo="$1" ver="$2" asset="$3" bin="$4"
+            curl -fsSLo "/tmp/$asset" "https://github.com/$repo/releases/download/v$ver/$asset"
+            curl -fsSLo /tmp/checksums.txt "https://github.com/$repo/releases/download/v$ver/checksums.txt"
+            grep " $asset\$" /tmp/checksums.txt | (cd /tmp && sha256sum -c -)
+            sudo tar -xzf "/tmp/$asset" -C /usr/local/bin "$bin"
+          }
+          install_release turbot/steampipe "$STEAMPIPE_VERSION" steampipe_linux_amd64.tar.gz steampipe
+          install_release turbot/powerpipe "$POWERPIPE_VERSION" powerpipe.linux.amd64.tar.gz powerpipe
+          steampipe --version && powerpipe --version
+          python3 -m pip install --user "pyyaml==6.0.2"
+
+      - name: Build the agentreach plugin
+        working-directory: steampipe-plugin-agentreach
+        run: |
+          mkdir -p ~/.steampipe/plugins/local/agentreach
+          make install
+
+      # -i writes the agentreach_fixtures connection and starts the service; -r
+      # regenerates the snapshots on Linux and fails if they differ from the
+      # committed ones (generated on macOS).
+      - name: Fixture checks
+        working-directory: steampipe-mod-agentreach-compliance
+        env:
+          AGENTREACH_FIXTURES_REQUIRED: "1"
+        run: ./ci/fixtures.sh -i -r
