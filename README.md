@@ -6,9 +6,9 @@ If a malicious instruction reached your coding agent, where could it go?
 
 A [Powerpipe](https://powerpipe.io) mod built on the [agentreach plugin](https://github.com/somoore/steampipe-plugin-agentreach). It checks what the agent can read, what it obeys, and where it can send data. One control per fact, every verdict deterministic, and the dashboard draws the attack paths as a graph.
 
-No standards body publishes a posture benchmark for coding agents yet, so the core profile is built on [OWASP AISVS 1.01](https://github.com/OWASP/AISVS/tree/v1.01/1.01/en). `spec/controls.yaml` lists the 12 core controls (7 mapped to AISVS, 5 agentreach extensions) and the evidence that makes each one pass, fail or come back not assessed. The other 100 controls are marked `needs_validation` until they earn the same record.
+The plugin discovers five agents automatically (Claude Code, Codex, OpenCode, Cline and Grok Build). Only Claude Code is judged here; the other four appear as inventory rows so you can query them, and the dashboard opens with a table of what is installed.
 
-The plugin discovers five agents automatically. Only Claude Code is judged here; the other four are inventory, not verdicts.
+No standards body publishes a posture benchmark for coding agents yet, so the core profile is built on [OWASP AISVS 1.01](https://github.com/OWASP/AISVS/tree/v1.01/1.01/en). `spec/controls.yaml` lists the 12 core controls (7 mapped to AISVS, 5 agentreach extensions) and the evidence that makes each one pass, fail or come back not assessed. The other 100 controls are marked `needs_validation` until they earn the same record.
 
 ## Read a result before trusting it
 
