@@ -92,7 +92,7 @@ jobs:
         if: steps.diff.outputs.docs_only != 'true'
         with:
           repository: somoore/steampipe-plugin-agentreach
-          ref: f8cd86c48a9c5774e08e352667f33bb8fa067352 # v0.2.0
+          ref: 179b33ea0daaad86d96eec25139b6ac2c08e605b # v0.2.0
           path: steampipe-plugin-agentreach
           persist-credentials: false
 
