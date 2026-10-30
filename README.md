@@ -58,7 +58,7 @@ Nine groups: lethal trifecta (the private data, untrusted input and exit channel
 
 ## Development
 
-`./ci/checks.sh` runs everything: parse, tags, the agent filter, version wiring, secrets, the spec and coverage, then the fixtures against the 19 bundled fixture machines (needs Powerpipe; the fixture section also needs Steampipe and the plugin). `docs/coverage.md` is the generated inventory of which controls have expectations. CONTRIBUTING.md has the recipe for adding a control; SECURITY.md covers reporting.
+`./ci/checks.sh` runs everything: parse, tags, the agent filter, version wiring, secrets, the spec and coverage, then the fixtures against the 19 bundled fixture machines (needs Powerpipe; the fixture section also needs Steampipe and the plugin). `./ci/checks.sh --quick` skips the fixtures, which is what the pre-commit hook runs; CI runs them before merge, and CI skips them for markdown-only changes. `docs/coverage.md` is the generated inventory of which controls have expectations. CONTRIBUTING.md has the recipe for adding a control; SECURITY.md covers reporting.
 
 While the plugin is a local build, every run prints a warning that nothing satisfies `agentreach@0.2.0`. It is harmless and goes away once the plugin is published.
 
