@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import yaml
 
@@ -73,9 +74,14 @@ runs = [(host, host, want) for host, want in spec.items()]
 for v in doc.get("variants") or []:
     runs.append((v["host"], "%s %s" % (v["host"], json.dumps(v["vars"], sort_keys=True)), v))
 
+# Render every run in parallel: they are independent subprocess calls and
+# the warm-up above has already filled the snapshot cache. pool.map keeps
+# the original order, so the checks and their output below are unchanged.
+with ThreadPoolExecutor(max_workers=6) as pool:
+    rendered = list(pool.map(lambda it: render_stable(conn, it[0], it[2].get("vars")), runs))
+
 bad = 0
-for host, label, want in runs:
-    panels, err = render_stable(conn, host, want.get("vars"))
+for (host, label, want), (panels, err) in zip(runs, rendered):
     problems = []
     if panels is None:
         print("  FAIL dashboard %s: no snapshot %s" % (label, err))
@@ -136,8 +142,11 @@ for host, label, want in runs:
 # rendered from a connection that holds only fx-open.
 iso = doc.get("isolation")
 if iso:
-    a, err_a = render_stable(conn, iso["host"])
-    b, err_b = render_stable(iso["connection"], iso["host"])
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        fa = pool.submit(render_stable, conn, iso["host"])
+        fb = pool.submit(render_stable, iso["connection"], iso["host"])
+        a, err_a = fa.result()
+        b, err_b = fb.result()
     if a is None or b is None:
         print("  FAIL dashboard isolation: no snapshot %s %s" % (err_a, err_b))
         bad += 1

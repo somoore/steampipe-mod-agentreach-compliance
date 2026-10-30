@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Pre-commit hook: parse + tag + secret checks before a commit lands.
+# Pre-commit hook: fast checks before a commit lands (parse, tags, agent
+# filter, version wiring, secrets, spec, coverage). The fixture suite runs
+# in CI before merge; run ./ci/checks.sh in full when you touch controls.
 # Activate with: git config core.hooksPath ci/hooks
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-echo "pre-commit: running checks ..."
-if ! ./ci/checks.sh; then
+echo "pre-commit: running checks (quick) ..."
+if ! ./ci/checks.sh --quick; then
   echo
   echo "pre-commit: checks failed; commit aborted."
   exit 1

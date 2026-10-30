@@ -8,8 +8,15 @@ on:
 permissions:
   contents: read
 
+# The fixtures job skips its work when the mod diff is markdown-only;
+# validate always runs in full, so README pins are never unchecked.
+env:
+  BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+
 jobs:
   validate:
+    # Always runs in full: it is what validates README pins, the spec and
+    # secrets, including for markdown-only changes.
     name: Parse, list, lint and secret-scan the mod
     runs-on: ubuntu-latest
     steps:
@@ -48,26 +55,49 @@ jobs:
         run: ./ci/checks.sh
 
   fixtures:
+    # The expensive job (112 controls x 19 fixture hosts + dashboards). It
+    # skips its work when the mod diff is markdown-only but still reports
+    # its status-check name, so branch protection keeps working.
     name: Controls and dashboard against fixtures (Linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: steampipe-mod-agentreach-compliance
+          fetch-depth: 0
+
+      - name: detect docs-only change
+        id: diff
+        working-directory: steampipe-mod-agentreach-compliance
+        run: |
+          docs_only=false
+          if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            docs_only=true
+            while IFS= read -r f; do
+              case "$f" in
+                *.md) ;;
+                *) docs_only=false ;;
+              esac
+            done < <(git diff --name-only "$BASE_SHA" "$GITHUB_SHA")
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
 
       # The plugin repository is public; the mod's fixture job checks it out
       # beside the mod, as the local directory layout expects.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: steps.diff.outputs.docs_only != 'true'
         with:
           repository: somoore/steampipe-plugin-agentreach
           path: steampipe-plugin-agentreach
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.diff.outputs.docs_only != 'true'
         with:
           go-version-file: steampipe-plugin-agentreach/go.mod
           cache-dependency-path: steampipe-plugin-agentreach/go.sum
 
       - name: Install Steampipe and Powerpipe (pinned releases, checksum-verified)
+        if: steps.diff.outputs.docs_only != 'true'
         env:
           STEAMPIPE_VERSION: "2.4.8"
           POWERPIPE_VERSION: "1.5.6"
@@ -86,6 +116,7 @@ jobs:
           python3 -m pip install --user "pyyaml==6.0.2"
 
       - name: Build the agentreach plugin
+        if: steps.diff.outputs.docs_only != 'true'
         working-directory: steampipe-plugin-agentreach
         run: |
           mkdir -p ~/.steampipe/plugins/local/agentreach
@@ -95,6 +126,7 @@ jobs:
       # regenerates the snapshots on Linux and fails if they differ from the
       # committed ones (generated on macOS).
       - name: Fixture checks
+        if: steps.diff.outputs.docs_only != 'true'
         working-directory: steampipe-mod-agentreach-compliance
         env:
           AGENTREACH_FIXTURES_REQUIRED: "1"

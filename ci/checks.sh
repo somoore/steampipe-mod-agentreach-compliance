@@ -16,10 +16,17 @@
 #      connection is missing)
 # Blocking checks exit non-zero. Needs powerpipe on PATH; Steampipe is not
 # required (listing does not query the database).
+#
+#   ./ci/checks.sh --quick     skip step 7 (the fixtures); for the
+#                              pre-commit hook, where CI runs them anyway
 set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)" || exit 1
 fail=0
+quick=0
+for a in "$@"; do
+  case "$a" in --quick) quick=1 ;; esac
+done
 
 say()  { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 bad()  { printf '\033[31m  FAIL: %s\033[0m\n' "$1"; fail=1; }
@@ -142,7 +149,11 @@ else
 fi
 
 #### 5. Fixtures ###############################################################
-./ci/fixtures.sh || fail=1
+if [ "$quick" = 1 ]; then
+  say "fixtures (skipped: --quick; CI runs them before merge)"
+else
+  ./ci/fixtures.sh || fail=1
+fi
 
 echo
 if [ "$fail" -ne 0 ]; then
