@@ -84,12 +84,12 @@ defaults:
     agents: [claude_code]
     os: [darwin, linux]
     claude_code: >-
-      Behaviour as documented at code.claude.com/docs, verified against
-      Claude Code 2.1.312 (the plugin's ModelBasisClaudeCode;
-      agentreach_agent.model_basis_stale flags an install newer than the
-      basis, and the plugin's weekly claude-code-drift workflow alarms when
-      the cited documents change). The fixtures pin 2.1.312 (2.1.300 for
-      fx-auto).
+      Behaviour as documented at code.claude.com/docs, read from the
+      installed release at scan time where the behaviour is visible in it
+      (for example auto mode's rule-drop list) and kept honest by the
+      plugin's weekly docs-drift workflow. Nothing is pinned to a release
+      number: a construct the model cannot interpret comes back unknown or
+      not assessed, never guessed.
     plugin: steampipe-plugin-agentreach v0.2.0 (needs agentreach_path.approval and agentreach_agent.network_approval)
 
 controls:

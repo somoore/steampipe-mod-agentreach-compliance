@@ -13,4 +13,4 @@ Rules:
 
 ## Framework pages
 
-There are none. The per-framework pages were removed on 2026-10-28 and live on the `frameworks-archive` branch (see `docs/audit-2026-10-28.md`). `posture.pp` is the only dashboard; do not add framework pages back.
+There are none. The per-framework pages were removed on 2026-10-28 and live on the `frameworks-archive` branch. `posture.pp` is the only dashboard; do not add framework pages back.

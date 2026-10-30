@@ -945,8 +945,7 @@ query "agentreach_table_agents" {
         when sandbox_enforced then 'enforced'
         when sandbox_enabled then 'on, not enforced'
         else 'off'
-      end as "Sandbox",
-      coalesce(nullif(model_basis, ''), 'docs, no release pin') as "Model basis"
+      end as "Sandbox"
     from (select * from agentreach_agent where host = (select host from scope)) agentreach_agent
     order by agent;
   EOQ

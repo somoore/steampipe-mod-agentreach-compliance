@@ -149,22 +149,38 @@ control "remote_servers_https" {
   })
 
   sql = <<-EOQ
+    with a as (select * from agentreach_agent where agent = 'claude_code'),
+    m as (
+      select s.* from (select * from agentreach_mcp_server where agent = 'claude_code') s
+      join a on ${format(local.same_snapshot_sql, "s")}
+      where coalesce(s.url, '') <> ''
+    )
     select
-      name as resource,
+      m.name as resource,
       case
-        when url ~* '^https://' then 'ok'
-        when url ~* '^http://(127\.0\.0\.1|localhost|\[::1\])([:/]|$)' then 'ok'
+        when m.url ~* '^https://' then 'ok'
+        when m.url ~* '^http://(127\.0\.0\.1|localhost|\[::1\])([:/]|$)' then 'ok'
         else 'alarm'
       end as status,
       case
-        when url ~* '^https://' then name || ' uses TLS: ' || url
-        when url ~* '^http://(127\.0\.0\.1|localhost|\[::1\])([:/]|$)' then name || ' is a loopback endpoint: ' || url
-        else name || ' uses cleartext ' || url || '. Switch to https:// or front it with a TLS proxy.'
+        when m.url ~* '^https://' then m.name || ' uses TLS: ' || m.url
+        when m.url ~* '^http://(127\.0\.0\.1|localhost|\[::1\])([:/]|$)' then m.name || ' is a loopback endpoint: ' || m.url
+        else m.name || ' uses cleartext ' || m.url || '. Switch to https:// or front it with a TLS proxy.'
       end as reason,
-      scope,
-      transport
-    from (select * from agentreach_mcp_server where agent = 'claude_code') agentreach_mcp_server
-    where coalesce(url, '') <> '';
+      m.scope,
+      m.transport,
+      m.host,
+      m.agent
+    from m
+    union all
+    select a.agent, 'ok', 'No remote MCP server is configured.', null, null, a.host, a.agent
+    from a
+    where not ${local.not_assessed_config_sql}
+      and not exists (select 1 from m where ${format(local.same_snapshot_sql, "m")})
+    union all
+    select a.agent, 'skip', ${local.not_assessed_reason_sql}, null, null, a.host, a.agent
+    from a
+    where ${local.not_assessed_config_sql};
   EOQ
 }
 

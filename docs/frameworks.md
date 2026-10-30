@@ -1,4 +1,4 @@
-> Status 2026-10-28: the runnable per-framework benchmarks described below were moved to the `frameworks-archive` branch. On `main` the framework keys are tags only. See `audit-2026-10-28.md`, section F, before restoring any of them.
+> Status 2026-10-28: the runnable per-framework benchmarks described below were moved to the `frameworks-archive` branch. On `main` the framework keys are tags only. Read the commit history before restoring any of them.
 >
 > The AgentReach assessment profile now has one primary standard, OWASP AISVS 1.01, recorded in `spec/controls.yaml` with tags `agentreach_class` and `aisvs`. Every tag key described on this page is legacy: frozen, not added to new controls. The CIS AI Agents Companion Guide v1.0 (2026-04-20) is published and is secondary guidance, cited by Safeguard number; the CIS MCP Server Benchmark v1.0.0 (2026-09-16) sits behind a registration form and has not been reviewed.
 

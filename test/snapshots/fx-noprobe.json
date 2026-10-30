@@ -14,8 +14,6 @@
       "agent": "claude_code",
       "binary_path": "",
       "version": "",
-      "model_basis": "2.1.312",
-      "model_basis_stale": null,
       "acp_harness": "",
       "install_method": "",
       "auto_updates": null,
