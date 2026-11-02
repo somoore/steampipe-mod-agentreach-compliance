@@ -15,7 +15,7 @@ import sys
 try:
     import yaml
 except ImportError:
-    print("PyYAML is missing: pip install pyyaml")
+    print("PyYAML is missing: python3 -m pip install --require-hashes -r requirements-ci.txt")
     sys.exit(1)
 
 spec = yaml.safe_load(open("spec/controls.yaml"))

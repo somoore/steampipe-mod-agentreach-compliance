@@ -42,7 +42,7 @@ printf '\n\033[1m== core controls against fixtures\033[0m\n'
 for t in steampipe powerpipe python3; do
   command -v "$t" >/dev/null 2>&1 || skip "$t is not on PATH"
 done
-python3 -c 'import yaml' 2>/dev/null || skip "PyYAML is missing (pip install pyyaml)"
+python3 -c 'import yaml' 2>/dev/null || skip "PyYAML is missing (python3 -m pip install --require-hashes -r requirements-ci.txt)"
 
 install=0; regen=0
 for a in "$@"; do
@@ -52,7 +52,19 @@ done
 if [ $install = 1 ]; then
   dir=${STEAMPIPE_INSTALL_DIR:-$HOME/.steampipe}/config
   mkdir -p "$dir"
-  sed "s|@REPO@|$(pwd)|" test/agentreach_fixtures.spc.example > "$dir/agentreach_fixtures.spc"
+  if [ -f "$dir/agentreach_fixtures.spc" ]; then
+    cp "$dir/agentreach_fixtures.spc" "$dir/agentreach_fixtures.spc.bak"
+    echo "  ok: backed up the existing connection to $dir/agentreach_fixtures.spc.bak"
+  fi
+  # Substitute the marker literally: sed would treat & or | in the checkout
+  # path as syntax and could corrupt the generated HCL.
+  python3 - "$dir/agentreach_fixtures.spc" <<'PY' || { echo "  FAIL: could not write the connection"; exit 1; }
+import pathlib
+import sys
+
+template = pathlib.Path("test/agentreach_fixtures.spc.example").read_text()
+pathlib.Path(sys.argv[1]).write_text(template.replace("@REPO@", str(pathlib.Path.cwd())))
+PY
   echo "  ok: wrote $dir/agentreach_fixtures.spc"
   # Powerpipe needs the service, not a one-off steampipe query.
   if steampipe service status 2>/dev/null | grep -q "Steampipe service is running"; then

@@ -46,9 +46,10 @@ control "sensitive_files_denied_in_sandbox" {
         else f.path || ' is blocked for shell commands and the Read tool.'
       end as reason,
       f.category,
-      f.project_dir
+      f.project_dir,
+      a.host as host
     from (select * from agentreach_reach_file where agent = 'claude_code') f
-    join (select * from agentreach_agent where agent = 'claude_code') a on a.agent = f.agent
+    join (select * from agentreach_agent where agent = 'claude_code') a on ${format(local.same_snapshot_sql, "f")}
     where f.exists and f.category <> 'env_file';
   EOQ
 }
@@ -86,9 +87,10 @@ control "env_files_not_readable" {
         else f.path || ' is blocked for shell commands and the Read tool.'
       end as reason,
       f.category,
-      f.project_dir
+      f.project_dir,
+      a.host as host
     from (select * from agentreach_reach_file where agent = 'claude_code') f
-    join (select * from agentreach_agent where agent = 'claude_code') a on a.agent = f.agent
+    join (select * from agentreach_agent where agent = 'claude_code') a on ${format(local.same_snapshot_sql, "f")}
     where f.exists and f.category = 'env_file';
   EOQ
 }
@@ -216,9 +218,10 @@ control "agent_credentials_of_other_agents_unreachable" {
         else f.path || ' is blocked.'
       end as reason,
       f.category,
-      f.agent
+      f.agent,
+      a.host as host
     from (select * from agentreach_reach_file where agent = 'claude_code') f
-    join (select * from agentreach_agent where agent = 'claude_code') a on a.agent = f.agent
+    join (select * from agentreach_agent where agent = 'claude_code') a on ${format(local.same_snapshot_sql, "f")}
     where f.exists and f.category = 'agent_credential';
   EOQ
 }
