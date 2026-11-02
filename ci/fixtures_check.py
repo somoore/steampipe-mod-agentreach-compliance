@@ -37,7 +37,23 @@ for rec in checks:
         label += " [%s=%s]" % (k, v if isinstance(v, str) else json.dumps(v))
     r = subprocess.run(cmd, capture_output=True, text=True)
     got, count, reasons = {}, {}, {}
-    for row in csv.DictReader(io.StringIO(r.stdout)):
+    # Powerpipe may prefix the CSV with notices (version checks, warnings) on
+    # some platforms. Anchor on the real header line instead of assuming the
+    # first line is it, and ignore any trailing non-data line.
+    lines = r.stdout.splitlines()
+    start = 0
+    for i, line in enumerate(lines):
+        if "host" in line and "status" in line:
+            start = i
+            break
+    reader = csv.DictReader(io.StringIO("\n".join(lines[start:])))
+    if not reader.fieldnames or "status" not in reader.fieldnames:
+        print("  FAIL %-7s %s: no status column (exit %d) %s" % (rec["agentreach"], label, r.returncode, r.stderr.strip()[:300]))
+        bad += 1
+        continue
+    for row in reader:
+        if not row.get("status"):
+            continue
         got.setdefault(row.get("host", ""), set()).add(row["status"])
         count[row.get("host", "")] = count.get(row.get("host", ""), 0) + 1
         reasons.setdefault(row.get("host", ""), []).append(row.get("reason", ""))
