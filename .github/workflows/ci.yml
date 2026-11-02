@@ -19,6 +19,7 @@ jobs:
     # secrets, including for markdown-only changes.
     name: Parse, list, lint and secret-scan the mod
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -46,8 +47,15 @@ jobs:
           echo "${GITLEAKS_SHA256}  /tmp/gl.tgz" | sha256sum -c -
           sudo tar -xzf /tmp/gl.tgz -C /usr/local/bin gitleaks
 
-      - name: Install PyYAML for the spec check
-        run: python3 -m pip install --user "pyyaml==6.0.2"
+      - name: Install PyYAML for the spec check (hash-pinned)
+        run: python3 -m pip install --user --require-hashes -r requirements-ci.txt
+
+      - name: Lint the CI scripts
+        run: |
+          set -euo pipefail
+          bash -n ci/checks.sh ci/fixtures.sh ci/hooks/pre-commit
+          python3 -m py_compile ci/*.py
+          shellcheck ci/checks.sh ci/fixtures.sh ci/hooks/pre-commit
 
       # The fixture section skips here (no Steampipe); the fixtures job runs it.
       - name: Run checks
@@ -61,6 +69,7 @@ jobs:
     # its status-check name, so branch protection keeps working.
     name: Controls and dashboard against fixtures (Linux)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -119,7 +128,8 @@ jobs:
           install_release turbot/steampipe "$STEAMPIPE_VERSION" steampipe_linux_amd64.tar.gz steampipe
           install_release turbot/powerpipe "$POWERPIPE_VERSION" powerpipe.linux.amd64.tar.gz powerpipe
           steampipe --version && powerpipe --version
-          python3 -m pip install --user "pyyaml==6.0.2"
+          python3 -m pip install --user --require-hashes \
+            -r steampipe-mod-agentreach-compliance/requirements-ci.txt
 
       - name: Build the agentreach plugin
         if: steps.diff.outputs.docs_only != 'true'
@@ -142,6 +152,7 @@ jobs:
     name: dependency review
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:

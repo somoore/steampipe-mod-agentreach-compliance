@@ -208,13 +208,13 @@ control "skills_inventoried" {
   tags = merge(local.common_tags, { agentreach = "SC-09", agentreach_class = "needs_validation", owasp_agentic = "ASI04", owasp_skills = "AST09", nist_800_53 = "CM-8", mitre_atlas = "AML.M0028" })
   sql = <<-EOQ
     select
-      a.agent || ' skills: ' || i.scope || coalesce(' plugin ' || nullif(i.plugin_name, ''), '') as resource,
+      a.host || ' ' || a.agent || ' skills: ' || i.scope || coalesce(' plugin ' || nullif(i.plugin_name, ''), '') as resource,
       'info' as status,
       count(*) || ' skill file(s) at ' || i.scope || ' scope' || coalesce(' from plugin ' || nullif(i.plugin_name, ''), '') || ', ' || sum(case when i.third_party then 1 else 0 end) || ' third party, ' || sum(case when i.external_url_count > 0 then 1 else 0 end) || ' with external URLs.' as reason,
-      i.scope, a.agent
-    from (select * from agentreach_instruction_file where agent = 'claude_code') i join (select * from agentreach_agent where agent = 'claude_code') a on a.agent = i.agent
+      i.scope, a.host, a.agent
+    from (select * from agentreach_instruction_file where agent = 'claude_code') i join (select * from agentreach_agent where agent = 'claude_code') a on ${format(local.same_snapshot_sql, "i")}
     where i.kind = 'skill'
-    group by a.agent, i.scope, i.plugin_name
+    group by a.host, a.snapshot_id, a.agent, i.scope, i.plugin_name
     order by i.scope, i.plugin_name;
   EOQ
 }

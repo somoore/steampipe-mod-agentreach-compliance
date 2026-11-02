@@ -142,9 +142,10 @@ control "credential_files_not_denied" {
       end as reason,
       f.tier,
       f.category,
-      f.agent
+      f.agent,
+      a.host as host
     from (select * from agentreach_reach_file where agent = 'claude_code') f
-    join (select * from agentreach_agent where agent = 'claude_code') a on a.agent = f.agent
+    join (select * from agentreach_agent where agent = 'claude_code') a on ${format(local.same_snapshot_sql, "f")}
     where f.exists
       and f.category in (select jsonb_array_elements_text($1::jsonb))
     order by f.tier, f.category, f.path;

@@ -729,8 +729,8 @@ query "agentreach_table_cut_one_leg" {
     per_category as (
       select
         f.category, f.tier, count(distinct f.path) as files,
-        string_agg(distinct '"' || regexp_replace(f.path, '^/Users/[^/]+|^/home/[^/]+', '~') || '"', ', ') as deny_list,
-        string_agg(distinct '"Read(//' || ltrim(f.path, '/') || case when f.is_dir then '/**' else '' end || ')"', ', ') as read_deny_list,
+        jsonb_agg(distinct to_jsonb(regexp_replace(f.path, '^/Users/[^/]+|^/home/[^/]+', '~'))) as deny_list,
+        jsonb_agg(distinct to_jsonb('Read(//' || ltrim(f.path, '/') || case when f.is_dir then '/**' else '' end || ')')) as read_deny_list,
         (select count(*) from p where p.target_category = f.category) as closed
       from (select * from agentreach_reach_file where agent = 'claude_code' and host = (select host from scope)) f
       join a on a.host = f.host and a.snapshot_id = f.snapshot_id and a.agent = f.agent
@@ -740,7 +740,7 @@ query "agentreach_table_cut_one_leg" {
     ),
     plugin_names as (
       -- One source per plugin; its title is name@marketplace.
-      select string_agg(distinct '"' || l.title || '": false', ', ') as list
+      select jsonb_object_agg(distinct l.title, false) as list
       from l
       where l.role = 'untrusted' and l.kind = 'plugin_file' and l.title <> ''
     ),
@@ -756,7 +756,9 @@ query "agentreach_table_cut_one_leg" {
       select
         'Deny read of tier-' || c.tier || ' ' || c.category || ' files (' || c.files || ')',
         'sandbox.filesystem.denyRead + permissions.deny',
-        '{"sandbox": {"filesystem": {"denyRead": [' || c.deny_list || ']}}, "permissions": {"deny": [' || c.read_deny_list || ']}}',
+        jsonb_build_object(
+          'sandbox', jsonb_build_object('filesystem', jsonb_build_object('denyRead', c.deny_list)),
+          'permissions', jsonb_build_object('deny', c.read_deny_list))::text,
         c.closed,
         case when a.sandbox_enforced then 'Both layers enforced now.' else 'The Read deny works immediately; denyRead needs an enforced sandbox.' end
       from per_category c, a
@@ -772,9 +774,11 @@ query "agentreach_table_cut_one_leg" {
       select
         'Approve or reject ' || count(*) || ' MCP server(s) that load without a decision',
         'enabledMcpjsonServers or disabledMcpjsonServers; enabledPlugins for plugin servers',
-        concat_ws(', ',
-          '{"disabledMcpjsonServers": [' || string_agg(distinct '"' || title || '"', ', ') filter (where position(':' in title) = 0) || ']}',
-          '{"enabledPlugins": {' || string_agg(distinct '"' || split_part(title, ':', 1) || '": false', ', ') filter (where position(':' in title) > 0) || '}}'),
+        jsonb_strip_nulls(jsonb_build_object(
+          'disabledMcpjsonServers',
+            jsonb_agg(distinct to_jsonb(title)) filter (where position(':' in title) = 0),
+          'enabledPlugins',
+            jsonb_object_agg(distinct split_part(title, ':', 1), false) filter (where position(':' in title) > 0)))::text,
         (select count(*) from p where p.source_kind = 'mcp'),
         'Or answer the approval prompt the next time the project opens.'
       from l where l.role = 'untrusted' and l.kind = 'mcp'
@@ -783,7 +787,7 @@ query "agentreach_table_cut_one_leg" {
       select
         'Disable or review plugin hooks (' || count(distinct title) || ' plugin(s))',
         'enabledPlugins',
-        '{"enabledPlugins": {' || string_agg(distinct '"' || title || '": false', ', ') || '}}',
+        jsonb_build_object('enabledPlugins', jsonb_object_agg(distinct title, false))::text,
         (select count(*) from p where p.source_kind = 'plugin_hook' or p.exit_kind = 'plugin_hooks'),
         'Removes an untrusted input and the hooks exit. Read each hooks.json before re-enabling.'
       from l where l.role = 'untrusted' and l.kind = 'plugin_hook'
@@ -792,7 +796,7 @@ query "agentreach_table_cut_one_leg" {
       select
         'Disable plugins whose skills, commands and subagents you have not read (' || count(distinct title) || ' plugin(s))',
         'enabledPlugins',
-        '{"enabledPlugins": {' || coalesce((select list from plugin_names), '') || '}}',
+        jsonb_build_object('enabledPlugins', coalesce((select list from plugin_names), '{}'::jsonb))::text,
         (select count(*) from p where p.source_kind = 'plugin_file'),
         'Plugin content loads into every session. Re-enable after reading it.'
       from l where l.role = 'untrusted' and l.kind = 'plugin_file'

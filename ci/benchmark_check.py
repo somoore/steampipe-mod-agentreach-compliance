@@ -13,6 +13,7 @@ Called by ci/fixtures.sh, which checks the tools.
 """
 import csv
 import io
+import json
 import subprocess
 import sys
 
@@ -43,16 +44,24 @@ for row in rows:
         print("  FAIL %s on %s: %s"
               % (ctl, row.get("host", "?"), (row.get("reason") or "")[:200]))
 
-listing = subprocess.run(["powerpipe", "control", "list", "--output", "csv"],
+listing = subprocess.run(["powerpipe", "control", "list", "--output", "json"],
                          capture_output=True, text=True)
+# The listing is a second opinion on the benchmark: it names every installed
+# control, so one that returns no rows on any fixture host is a FAIL even
+# though it produced no error row. A listing that cannot be read is itself a
+# failure; otherwise this check would silently do nothing.
 try:
-    listed = set(csv.DictReader(io.StringIO(listing.stdout)))
-    names = set(r["name"] for r in listed)
+    if listing.returncode != 0:
+        raise ValueError("exit %d %s" % (listing.returncode, listing.stderr.strip()[:300]))
+    listed = json.loads(listing.stdout)
+    names = {r["qualified_name"].split(".", 1)[-1]
+             for r in listed if r.get("qualified_name")}
     for name in sorted(names - set(by_control)):
         bad += 1
         print("  FAIL %s: returned no rows on any fixture host" % name)
-except Exception:
-    pass  # the listing is a second opinion, not the check itself
+except (ValueError, KeyError, TypeError) as e:
+    bad += 1
+    print("  FAIL powerpipe control list: %s" % e)
 
 if not bad:
     print("  ok   benchmark agentreach: %d controls, %d rows, 0 errors"

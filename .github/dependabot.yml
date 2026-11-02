@@ -4,7 +4,22 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    # Group action bumps into one PR; security bumps still open promptly.
+    # Wait a week before proposing a routine bump: a freshly published or
+    # compromised release is not merged the day it appears. Security updates
+    # are exempt from cooldown and still open promptly.
+    cooldown:
+      default-days: 7
+    # Group action bumps into one PR.
     groups:
       github-actions:
+        patterns: ["*"]
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    # requirements-ci.txt is hash-pinned; Dependabot refreshes the hashes.
+    cooldown:
+      default-days: 7
+    groups:
+      python-ci:
         patterns: ["*"]

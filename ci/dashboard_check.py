@@ -104,6 +104,17 @@ for (host, label, want), (panels, err) in zip(runs, rendered):
             for row in (v.get("data") or {}).get("rows") or []:
                 if any(s in str(c) for c in row.values()):
                     leaks.add("%s says %r" % (k.split(".")[-1], s))
+    # The Snippet column is JSON the user is told to paste into settings.json,
+    # so a plugin title or path containing a quote must come out escaped.
+    for k, v in panels.items():
+        for row in (v.get("data") or {}).get("rows") or []:
+            snippet = row.get("Snippet")
+            if not snippet:
+                continue
+            try:
+                json.loads(snippet)
+            except ValueError:
+                problems.append("%s: Snippet is not valid JSON" % k.split(".")[-1])
     if leaks:
         problems.append("on the page: " + ", ".join(sorted(leaks)[:5]))
     verdict = None

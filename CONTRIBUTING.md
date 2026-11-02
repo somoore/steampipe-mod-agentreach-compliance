@@ -10,7 +10,9 @@ will not merge.
 1. Fork, branch, PR. `main` requires the CI checks to pass; the repository
    owner reviews everything (CODEOWNERS).
 2. `./ci/checks.sh` must pass locally before you push. It needs powerpipe
-   on PATH; the fixture section also needs Steampipe with the
+   on PATH and PyYAML
+   (`python3 -m pip install --require-hashes -r requirements-ci.txt`); the
+   fixture section also needs Steampipe with the
    [agentreach plugin](https://github.com/somoore/steampipe-plugin-agentreach)
    installed (`make install` there) and a `agentreach_fixtures` connection
    (`./ci/fixtures.sh -i` writes it).
