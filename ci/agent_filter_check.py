@@ -89,6 +89,9 @@ for f in sorted(glob.glob("controls/*.pp") + glob.glob("dashboards/*.pp")):
         r'\b(control|query|dashboard|chart|node|category|table) "([^"]+)"', t)]
     for m in re.finditer(r"<<-(\w+)\s*\n(.*?)\n[ \t]*\1\b", t, re.S):
         sql = m.group(2)
+        # Recompute per block: `code` must hold this block's SQL, not a
+        # stale heredoc left over from the filter pass above.
+        code = strip_sql_comments(sql)
         block = ""
         for pos, n in names:
             if pos < m.start():
